@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title></title>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.7.3/p5.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.7.3/addons/p5.dom.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.7.3/addons/p5.sound.min.js"></script>
+  <style type="text/css">
+
+    * {
+      box-sizing: border-box;
+      margin:20px
+    }
+
+    #keys {
+      display: grid; 
+       grid-template-columns: auto auto auto auto;
+    }
+
+
+    .key {
+     
+          text-align:center;
+      padding: 20px;
+      margin: 4px;
+      background-color: white;
+      font-family: "Inter", sans-serif;
+      border: 3px solid #195ae0;
+      font-weight:bold;
+    }
+
+    
+  
+
+    .playing{
+        background-color: white;
+        animation-name: example;
+        animation-duration: 1s;
+    }
+
+
+@keyframes example {
+  from {background-color: white;}
+  to {
+    background-color: blue;
+    color: white;  
+    }
+}
+  </style>
+</head>
+<body>
+   <div class="keys" id="keys">
+      <div class="key"></div>
+      <div class="key">I need water</div>
+      <div class="key">I am hungry</div>
+      <div class="key">Take me outside</div>
+      <div class="key">switch of the lights</div>
+      <div class="key">Take me to washroom</div>
+      <div class="key">Play my favourite song</div>
+      <div class="key">Back</div>
+   
+   </div>
+   <script type="text/javascript">
+   
+  var mic;
+  var sliderTop;
+  var vol;
+    var thresholdTop;
+      let curr_div_on = 0,curr_div_off = 0;
+    var key0 = document.getElementsByClassName("key");
+
+
+
+  function setup() {
+    createCanvas(150, 150);
+    mic = new p5.AudioIn();
+    mic.start();
+    sliderTop = createSlider(0, 1, 0.3, 0.01);
+  }
+      function draw() {
+    background(225,225,225);
+
+    vol = mic.getLevel();
+
+
+
+    thresholdTop = sliderTop.value();
+  
+
+    fill(0, 255, 0);
+    noStroke();
+    var y = map(vol, 0, 1, height, 0);
+    rect(width - 50, y, 50, height - y);
+
+    var ty = map(thresholdTop, 0, 1, height, 0);
+    stroke(255, 0, 0);
+    strokeWeight(4);
+    line(width - 50, ty, width, ty);
+
+  }
+
+    var last = 0;
+  var from = 1;
+  var to = 9;
+  function printNumbers(from, to) {
+    let current = from;
+    let previous = last;
+      
+    setTimeout(function go() {
+      key0[current % 8].classList.add("playing");
+
+      
+      key0[previous % 8].classList.remove("playing");
+      if (current < to) {
+        setTimeout(go, 1000);
+       
+      }
+      if ((current === 1) && (vol> thresholdTop)) {
+        myFunction("I need water");
+        console.log("heee")
+      }
+      if ((current === 2) && (vol> thresholdTop)) {
+        myFunction("I am hungry");
+        console.log("heee")
+      }
+      if ((current === 3) && (vol> thresholdTop)) {
+        myFunction("I need water");
+        console.log("heee")
+      }
+      if ((current === 4) && (vol> thresholdTop)) {
+        myFunction("Take me outside");
+        console.log("heee")
+      }
+      if ((current === 5) && (vol> thresholdTop)) {
+        myFunction("switch of the lights");
+        console.log("heee")
+      }
+      if ((current === 6) && (vol> thresholdTop)) {
+        myFunction("Play my favourite song");
+        console.log("heee")
+      }
+      if (current === 7) {
+        current = 0
+      }
+      if (previous === 7) {
+        previous = 0
+      }
+     
+      current++;
+      previous++;
+    }, 2000);
+  }
+  printNumbers(from, to)
+  
+
+
+    
+
+
+   </script>
+  
+       
+      
+    
+
+
+  <!-- Speech SDK reference sdk. -->
+  <script src="microsoft.cognitiveservices.speech.sdk.bundle.js"></script>
+
+  <!-- Speech SDK Authorization token -->
+   <script>
+  var authorizationEndpoint = "token.php";
+
+  function RequestAuthorizationToken() {
+    if (authorizationEndpoint) {
+      var a = new XMLHttpRequest();
+      a.open("GET", authorizationEndpoint);
+      a.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+      a.send("");
+      a.onload = function() {
+        var token = JSON.parse(atob(this.responseText.split(".")[1]));
+        serviceRegion.value = token.region;
+        authorizationToken = this.responseText;
+        subscriptionKey.disabled = true;
+        subscriptionKey.value = "using authorization token (hit F5 to refresh)";
+        console.log("Got an authorization token: " + token);
+      }
+    }
+  }
+  </script>
+  
+  <script>
+        
+    // status fields and start button in UI
+    var phraseDiv;
+    
+    
+
+    // subscription key and region for speech services.
+    var subscriptionKey="24187135dd1048c490bddf26b7365c1e" , serviceRegion="southeastasia";
+    var authorizationToken;
+    var SpeechSDK;
+    var synthesizer;
+
+  
+      
+       function myFunction(update){
+       
+         phraseDiv = update;      
+
+      
+        var soundContext = undefined;
+        try {
+          var AudioContext = window.AudioContext || window.webkitAudioContext || false;
+          if (AudioContext) {
+            soundContext = new AudioContext();
+          } else {
+            alert("AudioContext not supported");
+          }
+        }
+        catch(e){
+          window.console.log("no sound context found, no audio output. " + e);
+        }  
+        
+        
+
+        // if we got an authorization token, use the token. Otherwise use the provided subscription key
+        var speechConfig;
+        if (authorizationToken) {
+          speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(authorizationToken, serviceRegion);
+        } else {
+          if (subscriptionKey.value === "" || subscriptionKey.value === "subscription") {
+            alert("Please enter your Microsoft Cognitive Services Speech subscription key!");            
+            return;
+          }
+          speechConfig = SpeechSDK.SpeechConfig.fromSubscription(subscriptionKey, serviceRegion);
+        }
+
+        synthesizer = new SpeechSDK.SpeechSynthesizer(speechConfig);
+
+        var inputText = phraseDiv;
+        console.log(inputText);
+        synthesizer.speakTextAsync(
+          inputText,    
+          function (result) {    
+            if (result.audioData && soundContext) {
+              var source = soundContext.createBufferSource();
+              soundContext.decodeAudioData(result.audioData, function (newBuffer) {
+                source.buffer = newBuffer;
+                source.connect(soundContext.destination);
+                source.start(0);
+              });
+            }           
+          },
+         );
+       
+      };
+
+      if (!!window.SpeechSDK) {
+        SpeechSDK = window.SpeechSDK;
+        //document.getElementById('content').style.display = 'block';
+        //document.getElementById('warning').style.display = 'none';
+
+        // in case we have a function for getting an authorization token, call it.
+        if (typeof RequestAuthorizationToken === "function") {
+          RequestAuthorizationToken();
+        }
+      }
+ 
+  
+  </script>
+</body>
+</html>
